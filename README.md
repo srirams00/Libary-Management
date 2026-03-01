@@ -20,7 +20,11 @@ Libary Maanagemt/
 
 1. Go to [MongoDB Atlas](https://cloud.mongodb.com) and create a free cluster
 2. Click **Connect → Drivers** and copy the connection string
-3. Open `backend/.env` and replace the `MONGO_URI` with your connection string:
+3. **Important**: In the MongoDB Atlas dashboard, go to **Network Access** -> **IP Access List**.
+   - Click **Add IP Address**.
+   - In the **Access List Entry** box, type: `0.0.0.0/0`
+   - This ensures your connection won't break if your local IP changes.
+4. Open `backend/.env` and replace the `MONGO_URI` with your connection string:
 
 ```
 MONGO_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.mongodb.net/librarydb?retryWrites=true&w=majority

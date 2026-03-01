@@ -18,45 +18,52 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Connect to database
-connectDB().catch(err => {
-    console.error('❌ MongoDB Connection Failure during startup:', err.message);
-});
+// Startup function
+const startServer = async () => {
+    try {
+        // Connect to database first
+        await connectDB();
 
-// Routes
-try {
-    app.use('/api/auth', require('./routes/authRoutes'));
-    app.use('/api/users', require('./routes/userRoutes'));
-    app.use('/api/books', require('./routes/bookRoutes'));
-    console.log('✅ Routes loaded successfully');
-} catch (error) {
-    console.error('❌ Error loading routes:', error.message);
-}
+        // Routes
+        app.use('/api/auth', require('./routes/authRoutes'));
+        app.use('/api/users', require('./routes/userRoutes'));
+        app.use('/api/books', require('./routes/bookRoutes'));
+        console.log('✅ Routes loaded successfully');
 
-// Health check
-app.get('/', (req, res) => {
-    res.json({
-        message: '📚 Library Management API is running!',
-        status: 'online',
-        timestamp: new Date().toISOString()
-    });
-});
+        // Health check
+        app.get('/', (req, res) => {
+            res.json({
+                message: '📚 Library Management API is running!',
+                status: 'online',
+                timestamp: new Date().toISOString()
+            });
+        });
 
-// Error handling and listen logic... (omitted for brevity, keeping original structure below)
-app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
-});
+        // 404 handler
+        app.use((req, res) => {
+            res.status(404).json({ message: 'Route not found' });
+        });
 
-app.use((err, req, res, next) => {
-    console.error('🔥 Server Error:', err.stack);
-    res.status(500).json({ message: err.message || 'Server Error' });
-});
+        // Global Error handler
+        app.use((err, req, res, next) => {
+            console.error('🔥 Server Error:', err.stack);
+            res.status(500).json({ message: err.message || 'Server Error' });
+        });
 
-const PORT = process.env.PORT || 5000;
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-    });
-}
+        const PORT = process.env.PORT || 5000;
+
+        // Listen only if not on Vercel or in dev
+        if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+            app.listen(PORT, () => {
+                console.log(`🚀 Server running on port ${PORT}`);
+            });
+        }
+    } catch (error) {
+        console.error('❌ Critical startup error:', error.message);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 module.exports = app;
