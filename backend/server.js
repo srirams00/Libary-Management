@@ -18,52 +18,48 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Startup function
-const startServer = async () => {
-    try {
-        // Connect to database first
-        await connectDB();
+// Connect to database (initiated but not blocking routes)
+connectDB().catch(err => {
+    console.error('❌ Critical database connection error:', err.message);
+});
 
-        // Routes
-        app.use('/api/auth', require('./routes/authRoutes'));
-        app.use('/api/users', require('./routes/userRoutes'));
-        app.use('/api/books', require('./routes/bookRoutes'));
-        console.log('✅ Routes loaded successfully');
+// Routes - Defined synchronously for Vercel compatibility
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/books', require('./routes/bookRoutes'));
+console.log('✅ Routes registered');
 
-        // Health check
-        app.get('/', (req, res) => {
-            res.json({
-                message: '📚 Library Management API is running!',
-                status: 'online',
-                timestamp: new Date().toISOString()
-            });
+// Health check
+app.get('/', (req, res) => {
+    res.json({
+        message: '📚 Library Management API is running!',
+        status: 'online',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
+
+// Global Error handler
+app.use((err, req, res, next) => {
+    console.error('🔥 Server Error:', err.stack);
+    res.status(500).json({ message: err.message || 'Server Error' });
+});
+
+// Local server listen logic
+const startLocalServer = async () => {
+    const PORT = process.env.PORT || 5000;
+    // Only listen if not on Vercel
+    if (!process.env.VERCEL) {
+        app.listen(PORT, () => {
+            console.log(`🚀 Local Server running on port ${PORT}`);
         });
-
-        // 404 handler
-        app.use((req, res) => {
-            res.status(404).json({ message: 'Route not found' });
-        });
-
-        // Global Error handler
-        app.use((err, req, res, next) => {
-            console.error('🔥 Server Error:', err.stack);
-            res.status(500).json({ message: err.message || 'Server Error' });
-        });
-
-        const PORT = process.env.PORT || 5000;
-
-        // Listen only if not on Vercel or in dev
-        if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-            app.listen(PORT, () => {
-                console.log(`🚀 Server running on port ${PORT}`);
-            });
-        }
-    } catch (error) {
-        console.error('❌ Critical startup error:', error.message);
-        process.exit(1);
     }
 };
 
-startServer();
+startLocalServer();
 
 module.exports = app;
